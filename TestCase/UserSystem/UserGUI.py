@@ -15,13 +15,6 @@ class UserGUI(unittest.TestCase):
     
     def setUp(self):
         self._include_librarys()
-    
-    def test_login(self):
-        """登录
-        操作步骤：
-        预期结果：
-        """
-        pass
 
     def tearDown(self):
         pass

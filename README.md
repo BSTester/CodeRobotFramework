@@ -40,7 +40,7 @@ import unittest
 
 class TestSuite(unittest.TestCase):
     def test_case(self):
-        """用例标题
+        """用例编号_用例标题
         操作步骤：
         1、
         2、
@@ -52,4 +52,4 @@ class TestSuite(unittest.TestCase):
         """
         pass
 ```
->Ps: 用例标题必须写在第一行, 换行编写操作步骤和预期结果, 操作步骤与预期结果之间用======分隔开, 至少包含6个等号。
+>Ps: 用例编号_用例标题必须写在第一行, 换行编写操作步骤和预期结果, 操作步骤与预期结果之间用======分隔开, 至少包含6个等号。

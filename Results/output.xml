@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites errors="0" failures="0" name="Test Report" skipped="0" tests="1" time="0.000000">
+	<testsuite errors="0" failures="0" name="用户模块自动化用例 接口版-20171017224257" skipped="0" tests="1" time="0.000000">
+		<testcase classname="TestCase.UserSystem.UserInterface.UserInterface" name="U0001_用户名注册 (test_U0001_username_register)" starttime="2017-10-17 22:42:57.803868" status="PASS" stoptime="2017-10-17 22:42:57.803868" time="0.000000">
+			<step message="        操作步骤:
+        1、进入注册页面
+        2、输入6-16位账户名
+        3、勾选‘我已阅读并同意《服务协议》’
+        4、点击【下一步】
+        5、点击【获取验证码】
+        6、输入6位验证码，点击【确认】
+        "/>
+			<expected message="预期结果:
+        注册成功"/>
+		</testcase>
+		<system-out>
+<![CDATA[]]>		</system-out>
+		<system-err>
+<![CDATA[]]>		</system-err>
+	</testsuite>
+</testsuites>

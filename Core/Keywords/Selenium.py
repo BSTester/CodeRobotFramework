@@ -4,7 +4,17 @@
 import os
 from SeleniumLibrary.base.robotlibcore import PY2
 from SeleniumLibrary import SeleniumLibrary
-from SeleniumLibrary.keywords import *
+from SeleniumLibrary.keywords.alert import AlertKeywords
+from SeleniumLibrary.keywords.browsermanagement import BrowserManagementKeywords
+from SeleniumLibrary.keywords.cookie import CookieKeywords
+from SeleniumLibrary.keywords.element import ElementKeywords
+from SeleniumLibrary.keywords.formelement import FormElementKeywords
+from SeleniumLibrary.keywords.javascript import JavaScriptKeywords
+from SeleniumLibrary.keywords.runonfailure import RunOnFailureKeywords
+from SeleniumLibrary.keywords.screenshot import ScreenshotKeywords
+from SeleniumLibrary.keywords.selectelement import SelectElementKeywords
+from SeleniumLibrary.keywords.tableelement import TableElementKeywords
+from SeleniumLibrary.keywords.waiting import WaitingKeywords
 
 
 class Selenium(

@@ -2,6 +2,7 @@
 import os
 import sys
 import time
+from datetime import datetime
 import traceback
 import six
 import re
@@ -426,6 +427,9 @@ class _XMLTestResult(_TextTestResult):
         testcase.setAttribute(
             'name', '{} ({})'.format(_XMLTestResult._test_method_name(test_result.test_description), test_result.test_id.split('.')[-1])
         )
+
+        testcase.setAttribute('starttime', datetime.fromtimestamp(test_result.test_result.start_time).strftime('%Y-%m-%d %H:%M:%S.%f'))
+        testcase.setAttribute('stoptime', datetime.fromtimestamp(test_result.test_result.stop_time).strftime('%Y-%m-%d %H:%M:%S.%f'))
         testcase.setAttribute('time', '%.6f' % test_result.elapsed_time)
         testcase.setAttribute('status', "PASS")
 
@@ -438,7 +442,7 @@ class _XMLTestResult(_TextTestResult):
         test_doc = test_doc.split('\n', 1)[-1]
         sep = re.findall(r'(======+)', test_doc)[0] if len(re.findall(r'(======+)', test_doc)) != 0 else '======'
         test_doc = test_doc.split(sep, 1)
-        detail_step = '<br>'.join(test_doc[0].split('\n')).strip()
+        detail_step = test_doc[0]
         expected = test_doc[1] if len(test_doc) > 1 else ''
         property_step.setAttribute('message', detail_step)
         property_expected.setAttribute('message', expected.strip())
