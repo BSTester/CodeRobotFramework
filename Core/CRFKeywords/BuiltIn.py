@@ -12,7 +12,7 @@ from robot.libraries.Telnet import Telnet
 from robot.libraries.XML import XML
 
 
-class BuiltIn(
+class CRFBuiltIn(
     RobotBuiltIn, 
     Collections, 
     OperatingSystem,

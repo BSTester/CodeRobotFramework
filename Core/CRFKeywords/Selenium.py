@@ -17,7 +17,7 @@ from SeleniumLibrary.keywords.tableelement import TableElementKeywords
 from SeleniumLibrary.keywords.waiting import WaitingKeywords
 
 
-class Selenium(
+class CRFSelenium(
     AlertKeywords,
     BrowserManagementKeywords,
     CookieKeywords,
