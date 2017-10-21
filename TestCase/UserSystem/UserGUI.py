@@ -10,12 +10,17 @@ from Resource.Variables.variables import *
 class UserGUI(unittest.TestCase):
     """用户模块自动化用例 GUI版"""
     # 导入自定义库
+    @classmethod
     def _include_librarys(self):
         self.comlib = CommonLibrary()
-    
-    def setUp(self):
+
+    @classmethod
+    def setUpClass(self):
         self._include_librarys()
 
+    def setUp(self):
+        pass
+        
     def test_U0018(self):
         """U0018_会员等级
         操作步骤:
