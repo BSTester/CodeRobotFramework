@@ -31,10 +31,11 @@ class TestRunner(XMLTestRunner):
     """
     def __init__(self, output='.', outsuffix=None, stream=sys.stderr,
                  descriptions=True, verbosity=1, elapsed_times=True,
-                 failfast=False, report_title=None, template=None, 
-                 buffer=False, encoding='UTF-8', resultclass=None):
-        TextTestRunner.__init__(self, stream, descriptions, verbosity,
-                                failfast=failfast, buffer=buffer)
+                 failfast=False, report_title=None, template=None, tb_locals=False,
+                 buffer=False, encoding='UTF-8', resultclass=None, rerun=0):
+        TextTestRunner.__init__(self, stream, descriptions, verbosity)
+        self.rerun = rerun
+        self.tb_locals = tb_locals
         self.verbosity = verbosity
         self.output = output
         self.encoding = encoding
@@ -57,6 +58,8 @@ class TestRunner(XMLTestRunner):
         try:
             result = self._make_result()
             result.failfast = self.failfast
+            result.tb_locals = self.tb_locals
+            result.rerun = self.rerun
             if hasattr(test, 'properties'):
                 # junit testsuite properties
                 result.properties = test.properties
@@ -72,7 +75,7 @@ class TestRunner(XMLTestRunner):
             
             result.printErrors()
             self.stream.writeln(result.separator2)
-            run = result.testsRun
+            run = result.testRun
             self.stream.writeln("Ran {} test{} in {}".format(run,
                                 run != 1 and "s" or "", str(self.time_taken)))
             self.stream.writeln()

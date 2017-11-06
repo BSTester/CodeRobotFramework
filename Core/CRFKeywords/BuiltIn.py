@@ -35,3 +35,7 @@ class CRFBuiltIn(
         String.__init__(self)
         Telnet.__init__(self)
         XML.__init__(self)
+
+    def print_log(self, message):
+        self.log('\n{}'.format(message), console=True)
+        print('\n{}'.format(message))

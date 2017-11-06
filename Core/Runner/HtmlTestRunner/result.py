@@ -4,9 +4,10 @@ import sys
 import time
 import traceback
 import re
+import six
+import html
 from unittest import TestResult, _TextTestResult
 from unittest.result import failfast
-
 from jinja2 import Template
 
 
@@ -54,22 +55,23 @@ class _TestInfo(object):
 
     (SUCCESS, FAILURE, ERROR, SKIP) = range(4)
 
-    def __init__(self, test_result, test_method, outcome=SUCCESS,
-                 err=None, subTest=None):
+    def __init__(self, test_result, test_method, outcome=SUCCESS, err=None, subTest=None):
         self.test_result = test_result
         self.outcome = outcome
         self.elapsed_time = 0
         self.err = err
         self.stdout = test_result._stdout_data
         self.stderr = test_result._stderr_data
-
+        self.screenshot = ''
+        self.rerun = 0
         test_description = self.test_result.getDescription(test_method)
         self.test_description = test_description.split()[0] if len(test_description.split())<3 else test_description.split()[-1]
 
         self.test_exception_info = (
             '' if outcome in (self.SUCCESS, self.SKIP)
             else self.test_result._exc_info_to_string(
-                self.err, test_method))
+                self.err, test_method)
+        )
         
         self.test_doc = test_method._testMethodDoc
         self.test_name = testcase_name(test_method)
@@ -94,15 +96,25 @@ class _TestInfo(object):
 class _HtmlTestResult(_TextTestResult):
     """ A test result class that express test results in Html. """
 
-    def __init__(self, stream, descriptions, verbosity, elapsed_times):
+    def __init__(self, stream=sys.stderr, descriptions=1, verbosity=1, 
+        elapsed_times=True, properties=None, infoclass=None):
         _TextTestResult.__init__(self, stream, descriptions, verbosity)
+        self.rerun = 0
+        self.retry = 0
+        self.tb_locals = False
         self.buffer = True
         self._stdout_data = None
         self._stderr_data = None
         self.successes = []
+        self.tested_fail_error = []
         self.callback = None
+        self.properties = properties
         self.elapsed_times = elapsed_times
-        self.infoclass = _TestInfo
+        if infoclass is None:
+            self.infoclass = _TestInfo
+        else:
+            self.infoclass = infoclass
+        self.testRun = 0
 
     def _prepare_callback(self, test_info, target_list, verbose_str,
                           short_str):
@@ -126,6 +138,8 @@ class _HtmlTestResult(_TextTestResult):
 
     def startTest(self, test):
         """ Called before execute each method. """
+        if self.retry == 0:
+            self.testRun += 1
         self.start_time = time.time()
         TestResult.startTest(self, test)
 
@@ -150,11 +164,23 @@ class _HtmlTestResult(_TextTestResult):
             self.callback()
             self.callback = None
 
+        if self.rerun > self.retry:
+            self.retry += 1
+            self.stream.write('Rerun {} time...'.format(self.retry))
+            test(self)
+        else:
+            self.retry = 0
+
     def addSuccess(self, test):
         """ Called when a test executes successfully. """
         self._save_output_data()
+        testinfo = self.infoclass(self, test)
+        testinfo.rerun = self.retry
         self._prepare_callback(
-            self.infoclass(self, test), self.successes, "OK", ".")
+            testinfo, self.successes, "OK", ".")
+        self.retry = self.rerun
+        if testinfo.test_id in self.tested_fail_error:
+            self._remove_test(testinfo.test_id)
 
     @failfast
     def addFailure(self, test, err):
@@ -162,8 +188,17 @@ class _HtmlTestResult(_TextTestResult):
         self._save_output_data()
         testinfo = self.infoclass(
             self, test, self.infoclass.FAILURE, err)
+        if testinfo.test_id in self.tested_fail_error:
+            self._remove_test(testinfo.test_id)
+        try:
+            testinfo.screenshot = test.driver.capture_page_screenshot()
+            test.driver.close_browser()
+        except Exception as e:
+            pass
+        testinfo.rerun = self.retry
         self.failures.append((testinfo,
-                             self._exc_info_to_string(err, test)))
+            self._exc_info_to_string(err, test)))
+        self.tested_fail_error.append(testinfo.test_id)
         self._prepare_callback(testinfo, [], "FAIL", "F")
 
     @failfast
@@ -172,10 +207,17 @@ class _HtmlTestResult(_TextTestResult):
         self._save_output_data()
         testinfo = self.infoclass(
             self, test, self.infoclass.ERROR, err)
-        self.errors.append((
-            testinfo,
-            self._exc_info_to_string(err, test)
-        ))
+        if testinfo.test_id in self.tested_fail_error:
+            self._remove_test(testinfo.test_id)
+        try:
+            testinfo.screenshot = test.driver.capture_page_screenshot()
+            test.driver.close_browser()
+        except Exception as e:
+            pass
+        testinfo.rerun = self.retry
+        self.errors.append((testinfo,
+            self._exc_info_to_string(err, test)))
+        self.tested_fail_error.append(testinfo.test_id)
         self._prepare_callback(testinfo, [], 'ERROR', 'E')
 
     def addSubTest(self, testcase, test, err):
@@ -184,10 +226,19 @@ class _HtmlTestResult(_TextTestResult):
             self._save_output_data()
             testinfo = self.infoclass(
                 self, testcase, self.infoclass.ERROR, err, subTest=test)
+            if testinfo.test_id in self.tested_fail_error:
+                self._remove_test(testinfo.test_id)
+            try:
+                testinfo.screenshot = test.driver.capture_page_screenshot()
+                test.driver.close_browser()
+            except Exception as e:
+                pass
+            testinfo.rerun = self.retry
             self.errors.append((
                 testinfo,
                 self._exc_info_to_string(err, testcase)
             ))
+            self.tested_fail_error.append(testinfo.test_id)
             self._prepare_callback(testinfo, [], "ERROR", "E")
 
     def addSkip(self, test, reason):
@@ -197,6 +248,15 @@ class _HtmlTestResult(_TextTestResult):
             self, test, self.infoclass.SKIP, reason)
         self.skipped.append((testinfo, reason))
         self._prepare_callback(testinfo, [], "SKIP", "S")
+        self.retry = self.rerun
+
+    def _remove_test(self, test_id):
+        for test in self.failures:
+            if test[0].test_id == test_id:
+                self.failures.remove(test)
+        for test in self.errors:
+            if test[0].test_id == test_id:
+                self.errors.remove(test)
 
     def printErrorList(self, flavour, errors):
         """
@@ -215,7 +275,6 @@ class _HtmlTestResult(_TextTestResult):
         """ Organize test results  by TestCase module. """
 
         tests_by_testcase = {}
-
         for tests in (self.successes, self.failures, self.errors, self.skipped):
             for test_info in tests:
                 if isinstance(test_info, tuple):
@@ -289,7 +348,10 @@ class _HtmlTestResult(_TextTestResult):
         else:
             error_message = testCase.err
         times = "%.6f" % testCase.elapsed_time
-        return test_cases_list.append([desc, class_name, expect_result, status, error_type, error_message, times])
+        error_message = error_message if not error_message else html.escape(str(error_message))
+        rerun = testCase.rerun
+        screenshot = testCase.screenshot if testCase.screenshot is not None else ''
+        return test_cases_list.append([desc, class_name, expect_result, status, error_type, error_message, times, rerun, screenshot])
 
     def get_test_number(self, test):
         """ Return the number of a test case or 0. """
@@ -355,14 +417,14 @@ class _HtmlTestResult(_TextTestResult):
 
     def _exc_info_to_string(self, err, test):
         """ Converts a sys.exc_info()-style tuple of values into a string."""
-        # if six.PY3:
-        #     # It works fine in python 3
-        #     try:
-        #         return super(_HTMLTestResult, self)._exc_info_to_string(
-        #             err, test)
-        #     except AttributeError:
-        #         # We keep going using the legacy python <= 2 way
-        #         pass
+        if six.PY3:
+            # It works fine in python 3
+            try:
+                return super(_TextTestResult, self)._exc_info_to_string(
+                    err, test)
+            except AttributeError:
+                # We keep going using the legacy python <= 2 way
+                pass
 
         # This comes directly from python2 unittest
         exctype, value, tb = err

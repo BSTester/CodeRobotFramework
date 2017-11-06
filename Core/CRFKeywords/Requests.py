@@ -1,9 +1,9 @@
 # coding=utf8
 
 
-from RequestsLibrary import RequestsLibrary
+from RequestsLibrary.RequestsKeywords import RequestsKeywords
 
 
-class CRFRequests(RequestsLibrary):
+class CRFRequests(RequestsKeywords):
     def __init__(self):
-    	RequestsLibrary.__init__(self)
+    	RequestsKeywords.__init__(self)

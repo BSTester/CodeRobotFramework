@@ -12,14 +12,14 @@ class HTMLTestRunner(TextTestRunner):
     """" A test runner class that output the results. """
 
     def __init__(self, output, verbosity=2, stream=sys.stderr,
-                 descriptions=True, failfast=False, buffer=False,
-                 report_title=None, template=None, resultclass=None):
+                 descriptions=True, failfast=False, buffer=False, tb_locals=False,
+                 report_title=None, template=None, resultclass=None, rerun=0):
+        TextTestRunner.__init__(self, stream, descriptions, verbosity)
+        self.rerun = rerun
         self.verbosity = verbosity
         self.output = output
         self.encoding = UTF8
-
-        TextTestRunner.__init__(self, stream, descriptions, verbosity,
-                                failfast=failfast, buffer=buffer)
+        self.tb_locals = tb_locals
 
         self.outsuffix = time.strftime("%Y-%m-%d_%H-%M-%S")
         self.elapsed_times = True
@@ -34,8 +34,7 @@ class HTMLTestRunner(TextTestRunner):
     def _make_result(self):
         """ Create a TestResult object which will be used to store
         information about the executed tests. """
-        return self.resultclass(self.stream, self.descriptions, self.verbosity,
-                                self.elapsed_times)
+        return self.resultclass(self.stream, self.descriptions, self.verbosity, self.elapsed_times)
 
     def run(self, test):
         """ Runs the given testcase or testsuite. """
@@ -43,6 +42,8 @@ class HTMLTestRunner(TextTestRunner):
 
             result = self._make_result()
             result.failfast = self.failfast
+            result.tb_locals = self.tb_locals
+            result.rerun = self.rerun
             if hasattr(test, 'properties'):
                 # junit testsuite properties
                 result.properties = test.properties
@@ -58,7 +59,7 @@ class HTMLTestRunner(TextTestRunner):
 
             result.printErrors()
             self.stream.writeln(result.separator2)
-            run = result.testsRun
+            run = result.testRun
             self.stream.writeln("Ran {} test{} in {}".format(run,
                                 run != 1 and "s" or "", str(self.time_taken)))
             self.stream.writeln()

@@ -4,7 +4,7 @@
 ## 需要安装的模块
 ```
 pip install -U unittest-xml-reporting html-testRunner requests selenium \
-pymysql pymongo robotframework robotframework-seleniumlibrary \
+pymysql pymongo robotframework robotframework-seleniumlibrary==3.0.0b3 \
 robotframework-requests robotframework-databaselibrary \
 robotframework-ftplibrary robotframework-appiumlibrary \
 robotframework-archivelibrary robotframework-difflibrary \

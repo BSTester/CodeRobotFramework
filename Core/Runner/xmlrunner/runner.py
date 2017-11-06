@@ -16,13 +16,14 @@ class XMLTestRunner(TextTestRunner):
     """
     def __init__(self, output='.', outsuffix=None, stream=sys.stderr,
                  descriptions=True, verbosity=1, elapsed_times=True,
-                 failfast=False, buffer=False, encoding=UTF8,
-                 resultclass=None, report_title=None, template=None):
-        TextTestRunner.__init__(self, stream, descriptions, verbosity,
-                                failfast=failfast, buffer=buffer)
+                 failfast=False, buffer=False, encoding=UTF8, tb_locals=False,
+                 resultclass=None, report_title=None, template=None, rerun=0):
+        TextTestRunner.__init__(self, stream, descriptions, verbosity)
+        self.rerun = rerun
         self.verbosity = verbosity
         self.output = output
         self.encoding = encoding
+        self.tb_locals = tb_locals
         # None means default timestamped suffix
         # '' (empty) means no suffix
         if outsuffix is None:
@@ -43,9 +44,7 @@ class XMLTestRunner(TextTestRunner):
         information about the executed tests.
         """
         # override in subclasses if necessary.
-        return self.resultclass(
-            self.stream, self.descriptions, self.verbosity, self.elapsed_times
-        )
+        return self.resultclass(self.stream, self.descriptions, self.verbosity, self.elapsed_times)
 
     def run(self, test):
         """
@@ -55,6 +54,8 @@ class XMLTestRunner(TextTestRunner):
             # Prepare the test execution
             result = self._make_result()
             result.failfast = self.failfast
+            result.tb_locals = self.tb_locals
+            result.rerun = self.rerun
             if hasattr(test, 'properties'):
                 # junit testsuite properties
                 result.properties = test.properties
@@ -73,7 +74,7 @@ class XMLTestRunner(TextTestRunner):
             # Print results
             result.printErrors()
             self.stream.writeln(result.separator2)
-            run = result.testsRun
+            run = result.testRun
             self.stream.writeln("Ran %d test%s in %.6fs" % (
                 run, run != 1 and "s" or "", time_taken)
             )

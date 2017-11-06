@@ -15,6 +15,7 @@ from SeleniumLibrary.keywords.screenshot import ScreenshotKeywords
 from SeleniumLibrary.keywords.selectelement import SelectElementKeywords
 from SeleniumLibrary.keywords.tableelement import TableElementKeywords
 from SeleniumLibrary.keywords.waiting import WaitingKeywords
+from robot.libraries.BuiltIn import BuiltIn
 
 
 class CRFSelenium(
@@ -46,6 +47,7 @@ class CRFSelenium(
         SelectElementKeywords.__init__(self, ctx),
         TableElementKeywords.__init__(self, ctx),
         WaitingKeywords.__init__(self, ctx)
+        self.builtIn = BuiltIn()
 
     @property
     def log_dir(self):
@@ -57,3 +59,25 @@ class CRFSelenium(
                 return os.path.abspath(self.screenshot_directory)
         except RobotNotRunningError:
             return os.getcwdu() if PY2 else os.getcwd()
+
+    def open_wdBrowser(self, url, browser='Chrome'):
+        """
+        通过WebDriver启动浏览器
+        启动浏览器类型，可选：Firefox、Chrome、PhantomJS
+        """
+        self.builtIn.log_to_console('\n==============通过 WebDriver 打开 {} 浏览器=============='.format(browser))    
+        service_args = ['--ssl-protocol=any', '--web-security=false', '--debug=true', 
+                        '--ignore-ssl-errors=true', '--webdriver-loglevel=WARN']
+        if browser == 'PhantomJS':
+            self.create_webdriver(browser, service_args=service_args)
+        else:
+            self.create_webdriver(browser)
+        self.go_to(url)
+        self.maximize_browser_window()
+
+    def make_element_visible(self, xpath):
+        """Make Element Visible"""
+        self.builtIn.log_to_console('\n============使节点元素 {} 可见==========='.format(xpath))
+        self.wait_until_page_contains_element(xpath)
+        self.execute_javascript("document.evaluate('{}', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.style.display = 'block';".format(xpath))
+        self.wait_until_emement_is_visible(xpath)

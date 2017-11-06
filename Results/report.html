@@ -14,45 +14,41 @@
         <div class="row">
             <div class="col-xs-12">
                 <h2 class="text-capitalize">Test Report</h2>
-                <p class='attribute'><strong>Start Time: </strong>2017-10-20 00:28:06</p>
-                <p class='attribute'><strong>Duration: </strong>0:00:00.000997</p>
+                <p class='attribute'><strong>Start Time: </strong>2017-11-06 20:39:33</p>
+                <p class='attribute'><strong>Duration: </strong>0:00:00</p>
                 <p class='attribute'><strong>Status: </strong>Pass: 1</p>
             </div>
         </div>
         <div class="row">
             <div class="col-xs-12">
+                <p style="text-align: right;"><button id="all" class="btn btn-primary btn-xs">ALL</button>&nbsp;&nbsp;<button id="pass" class="btn btn-success btn-xs">PASS</button>&nbsp;&nbsp;<button id="fail" class="btn btn-danger btn-xs">FAIL</button>&nbsp;&nbsp;<button id="skip" class="btn btn-info btn-xs">SKIP</button>&nbsp;&nbsp;<button id="error" class="btn btn-warning btn-xs">ERROR</button></p>
                 <table class='table table-hover table-responsive'>
                     <thead>
                         <tr>
                             <th class="col-xs-3">TestCase</th>
                             <th class="col-xs-4">ClassName</th>
                             <th class="col-xs-2">Expected</th>
-                            <th class="col-xs-1">Time (s)</th>
+                            <th class="col-xs-1">Time&nbsp;&nbsp;(Rerun)</th>
                             <th class="col-xs-2">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         
                             <tr class="success">
-                                <td>U0018_会员等级 (test_U0018)</td>
+                                <td>U0001_用户名注册 (test_U0001)</td>
                                 <td>TestCase.UserSystem.UserGUI.UserGUI</td>
                                 <td>
-        预期结果:
-        
-        预期结果:
-        1、显示当前用户的成长值
-        2、显示【去赚取成长值】按钮，点击跳转成长任务界面
-        3、显示各项成长任务对应成长值
-        4、显示成长值的计算方式
-        5、显示会员升级与保级说明
+        预期结果:         
+        注册成功
         </td>
-                                <td>0.000996</td>
+                                <td>0.000000&nbsp;&nbsp;(0)</td>
                                 <td>
                                     <span class="label label-success">
                                         
                                             Pass
                                         
                                     </span>
+                                    
                                     
                                 </td>
                             </tr>
@@ -76,7 +72,7 @@
     <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
     <script type="text/javascript">
         $(document).ready(function(){
-            $('td').on('click', '.btn', function(e){
+            $('td').on('click', 'button.btn-default', function(e){
                 e.preventDefault();
                 var $this = $(this);
                 var $nextRow = $this.closest('tr').next('tr');
@@ -88,6 +84,35 @@
                         return 'View';
                     };
                 });
+            });
+            $('#all').click(function(){
+                $('tr.success,tr.danger,tr.warning,tr.info').removeAttr('style');
+                $('tr.success-detail,tr.danger-detail,tr.warning-detail,tr.info-detail').attr('style', 'display: none;');
+                $('button.btn-default').text('View');
+            });
+            $('#pass').click(function(){
+                $('tr.danger,tr.warning,tr.info').attr('style', 'display: none;');
+                $('tr.success').removeAttr('style');
+                $('tr.success-detail,tr.danger-detail,tr.warning-detail,tr.info-detail').attr('style', 'display: none;');
+                $('button.btn-default').text('View');
+            });
+            $('#fail').click(function(){
+                $('tr.success,tr.warning,tr.info').attr('style', 'display: none;');
+                $('tr.danger').removeAttr('style');
+                $('tr.success-detail,tr.danger-detail,tr.warning-detail,tr.info-detail').attr('style', 'display: none;');
+                $('button.btn-default').text('View');
+            });
+            $('#skip').click(function(){
+                $('tr.danger,tr.warning,tr.success').attr('style', 'display: none;');
+                $('tr.info').removeAttr('style');
+                $('tr.success-detail,tr.danger-detail,tr.warning-detail,tr.info-detail').attr('style', 'display: none;');
+                $('button.btn-default').text('View');
+            });
+            $('#error').click(function(){
+                $('tr.danger,tr.success,tr.info').attr('style', 'display: none;');
+                $('tr.warning').removeAttr('style');
+                $('tr.success-detail,tr.danger-detail,tr.warning-detail,tr.info-detail').attr('style', 'display: none;');
+                $('button.btn-default').text('View');
             });
         });
     </script>

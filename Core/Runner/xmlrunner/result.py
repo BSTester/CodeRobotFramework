@@ -94,18 +94,21 @@ class _TestInfo(object):
     def __init__(self, test_result, test_method, outcome=SUCCESS, err=None, subTest=None):
         self.test_result = test_result
         self.outcome = outcome
+        self.start_time = 0
+        self.stop_time = 0
         self.elapsed_time = 0
         self.err = err
         self.stdout = test_result._stdout_data
         self.stderr = test_result._stderr_data
-
+        self.screenshot = ''
+        self.rerun = 0
         test_description = self.test_result.getDescription(test_method)
         self.test_description = test_description.split()[0] if len(test_description.split())<3 else test_description.split()[-1]
 
         self.test_exception_info = (
             '' if outcome in (self.SUCCESS, self.SKIP)
             else self.test_result._exc_info_to_string(
-                    self.err, test_method)
+                self.err, test_method)
         )
         
         self.suite_doc = test_method.__doc__
@@ -123,6 +126,8 @@ class _TestInfo(object):
         """
         self.elapsed_time = \
             self.test_result.stop_time - self.test_result.start_time
+        self.start_time = self.test_result.start_time
+        self.stop_time = self.test_result.stop_time
 
     def get_description(self):
         """
@@ -147,10 +152,14 @@ class _XMLTestResult(_TextTestResult):
     def __init__(self, stream=sys.stderr, descriptions=1, verbosity=1,
                  elapsed_times=True, properties=None, infoclass=None):
         _TextTestResult.__init__(self, stream, descriptions, verbosity)
+        self.rerun = 0
+        self.retry = 0
+        self.tb_locals = False
         self.buffer = True  # we are capturing test output
         self._stdout_data = None
         self._stderr_data = None
         self.successes = []
+        self.tested_fail_error = []
         self.callback = None
         self.elapsed_times = elapsed_times
         self.properties = properties  # junit testsuite properties
@@ -158,6 +167,7 @@ class _XMLTestResult(_TextTestResult):
             self.infoclass = _TestInfo
         else:
             self.infoclass = infoclass
+        self.testRun = 0
 
     def _prepare_callback(self, test_info, target_list, verbose_str,
                           short_str):
@@ -171,7 +181,6 @@ class _XMLTestResult(_TextTestResult):
             """Prints the test method outcome to the stream, as well as
             the elapsed time.
             """
-
             test_info.test_finished()
 
             # Ignore the elapsed times for a more reliable unit testing
@@ -184,12 +193,15 @@ class _XMLTestResult(_TextTestResult):
                 )
             elif self.dots:
                 self.stream.write(short_str)
+
         self.callback = callback
 
     def startTest(self, test):
         """
         Called before execute each test method.
         """
+        if self.retry == 0:
+            self.testRun += 1
         self.start_time = time.time()
         TestResult.startTest(self, test)
 
@@ -221,14 +233,26 @@ class _XMLTestResult(_TextTestResult):
             self.callback()
             self.callback = None
 
+        if self.rerun > self.retry:
+            self.retry += 1
+            self.stream.write('Rerun {} time...'.format(self.retry))
+            test(self)
+        else:
+            self.retry = 0
+
     def addSuccess(self, test):
         """
         Called when a test executes successfully.
         """
         self._save_output_data()
+        testinfo = self.infoclass(self, test)
+        testinfo.rerun = self.retry
         self._prepare_callback(
-            self.infoclass(self, test), self.successes, 'OK', '.'
+            testinfo, self.successes, 'OK', '.'
         )
+        self.retry = self.rerun
+        if testinfo.test_id in self.tested_fail_error:
+            self._remove_test(testinfo.test_id)
 
     @failfast
     def addFailure(self, test, err):
@@ -238,10 +262,17 @@ class _XMLTestResult(_TextTestResult):
         self._save_output_data()
         testinfo = self.infoclass(
             self, test, self.infoclass.FAILURE, err)
-        self.failures.append((
-            testinfo,
-            self._exc_info_to_string(err, test)
-        ))
+        if testinfo.test_id in self.tested_fail_error:
+            self._remove_test(testinfo.test_id)
+        try:
+            testinfo.screenshot = test.driver.capture_page_screenshot()
+            test.driver.close_browser()
+        except Exception as e:
+            pass
+        testinfo.rerun = self.retry
+        self.failures.append((testinfo,
+            self._exc_info_to_string(err, test)))
+        self.tested_fail_error.append(testinfo.test_id)
         self._prepare_callback(testinfo, [], 'FAIL', 'F')
 
     @failfast
@@ -252,10 +283,17 @@ class _XMLTestResult(_TextTestResult):
         self._save_output_data()
         testinfo = self.infoclass(
             self, test, self.infoclass.ERROR, err)
-        self.errors.append((
-            testinfo,
-            self._exc_info_to_string(err, test)
-        ))
+        if testinfo.test_id in self.tested_fail_error:
+            self._remove_test(testinfo.test_id)
+        try:
+            testinfo.screenshot = test.driver.capture_page_screenshot()
+            test.driver.close_browser()
+        except Exception as e:
+            pass
+        testinfo.rerun = self.retry
+        self.errors.append((testinfo,
+            self._exc_info_to_string(err, test)))
+        self.tested_fail_error.append(testinfo.test_id)
         self._prepare_callback(testinfo, [], 'ERROR', 'E')
 
     def addSubTest(self, testcase, test, err):
@@ -266,10 +304,19 @@ class _XMLTestResult(_TextTestResult):
             self._save_output_data()
             testinfo = self.infoclass(
                 self, testcase, self.infoclass.ERROR, err, subTest=test)
+            if testinfo.test_id in self.tested_fail_error:
+                self._remove_test(testinfo.test_id)
+            try:
+                testinfo.screenshot = test.driver.capture_page_screenshot()
+                test.driver.close_browser()
+            except Exception as e:
+                pass
+            testinfo.rerun = self.retry
             self.errors.append((
                 testinfo,
                 self._exc_info_to_string(err, testcase)
             ))
+            self.tested_fail_error.append(testinfo.test_id)
             self._prepare_callback(testinfo, [], 'ERROR', 'E')
 
     def addSkip(self, test, reason):
@@ -281,6 +328,15 @@ class _XMLTestResult(_TextTestResult):
             self, test, self.infoclass.SKIP, reason)
         self.skipped.append((testinfo, reason))
         self._prepare_callback(testinfo, [], 'SKIP', 'S')
+        self.retry = self.rerun
+
+    def _remove_test(self, test_id):
+        for test in self.failures:
+            if test[0].test_id == test_id:
+                self.failures.remove(test)
+        for test in self.errors:
+            if test[0].test_id == test_id:
+                self.errors.remove(test)
 
     def printErrorList(self, flavour, errors):
         """
@@ -302,7 +358,6 @@ class _XMLTestResult(_TextTestResult):
         for each TestCase.
         """
         tests_by_testcase = {}
-
         for tests in (self.successes, self.failures, self.errors,
                       self.skipped):
             for test_info in tests:
@@ -428,11 +483,12 @@ class _XMLTestResult(_TextTestResult):
             'name', '{} ({})'.format(_XMLTestResult._test_method_name(test_result.test_description), test_result.test_id.split('.')[-1])
         )
 
-        testcase.setAttribute('starttime', datetime.fromtimestamp(test_result.test_result.start_time).strftime('%Y-%m-%d %H:%M:%S.%f'))
-        testcase.setAttribute('stoptime', datetime.fromtimestamp(test_result.test_result.stop_time).strftime('%Y-%m-%d %H:%M:%S.%f'))
+        testcase.setAttribute('starttime', datetime.fromtimestamp(test_result.start_time).strftime('%Y-%m-%d %H:%M:%S.%f'))
+        testcase.setAttribute('stoptime', datetime.fromtimestamp(test_result.stop_time).strftime('%Y-%m-%d %H:%M:%S.%f'))
         testcase.setAttribute('time', '%.6f' % test_result.elapsed_time)
         testcase.setAttribute('status', "PASS")
-
+        testcase.setAttribute('rerun', str(test_result.rerun))
+        testcase.setAttribute('screenshot', test_result.screenshot)
         property_step = xml_document.createElement('step')
         property_expected = xml_document.createElement('expected')
         testcase.appendChild(property_step)
