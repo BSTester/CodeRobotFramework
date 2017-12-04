@@ -10,6 +10,7 @@ from robot.libraries.Screenshot import Screenshot
 from robot.libraries.String import String
 from robot.libraries.Telnet import Telnet
 from robot.libraries.XML import XML
+import time
 
 
 class CRFBuiltIn(
@@ -22,20 +23,15 @@ class CRFBuiltIn(
     Screenshot,
     String,
     Telnet,
-    XML
-    ):
+    XML):
     def __init__(self):
-        RobotBuiltIn.__init__(self)
-        Collections.__init__(self)
-        OperatingSystem.__init__(self)
         Process.__init__(self)
         Remote.__init__(self)
-        Reserved.__init__(self)
         Screenshot.__init__(self)
-        String.__init__(self)
         Telnet.__init__(self)
         XML.__init__(self)
 
     def print_log(self, message):
-        self.log('\n{}'.format(message), console=True)
-        print('\n{}'.format(message))
+        message = '\n[{}] {}'.format(time.strftime('%Y-%m-%d %H:%M:%S'), message)
+        self.log('{}'.format(message), console=True)
+        print('{}'.format(message))

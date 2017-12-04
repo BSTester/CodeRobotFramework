@@ -1,11 +1,9 @@
 # coding=utf8
 
 
-from DatabaseLibrary.connection_manager import ConnectionManager
-from DatabaseLibrary.query import Query
-from DatabaseLibrary.assertion import Assertion
+from DatabaseLibrary import DatabaseLibrary
 
 
-class CRFDatabase(ConnectionManager, Query, Assertion):
+class CRFDatabase(DatabaseLibrary):
     def __init__(self):
-    	ConnectionManager.__init__(self)
+    	super(CRFDatabase, self).__init__()

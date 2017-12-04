@@ -5,4 +5,4 @@ from DiffLibrary import DiffLibrary
 
 class CRFDiff(DiffLibrary):
     def __init__(self):
-    	DiffLibrary.__init__(self)
+    	super(CRFDiff, self).__init__()

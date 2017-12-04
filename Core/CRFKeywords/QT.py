@@ -1,16 +1,9 @@
 # encoding=utf8
 
 
-from QTLibrary.keywords._element import _ElementKeywords
-from QTLibrary.keywords._logging import _LoggingKeywords
-from QTLibrary.keywords._runonfailure import _RunOnFailureKeywords
+from QTLibrary import QTLibrary
 
 
-class CRFQT(
-    _ElementKeywords,
-    _LoggingKeywords,
-    _RunOnFailureKeywords):
+class CRFQT(QTLibrary):
 	def __init__(self):
-		_ElementKeywords.__init__(self)
-		_RunOnFailureKeywords.__init__(self)
-		
+		super(CRFQT, self).__init__()
